@@ -1,0 +1,19 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <h1>Modifier student </h1>
+
+    <form method="post">
+        {{ form_start(f) }}
+        {{ form_row(f.name) }}
+        {{ form_row(f.email) }}
+        {{ form_row(f.age) }}
+        {{ form_row(f.classroom) }}
+
+        <button type="submit" class="btn btn-primary" name="edit_student">Save</button>
+        <br><br>
+        <a href="{{ path('fetch') }}" class="btn btn-secondary">Back to the student list</a>
+
+        {{ form_end(f)}}
+    </form>
+{% endblock %}

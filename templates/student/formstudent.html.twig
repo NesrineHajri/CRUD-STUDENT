@@ -1,0 +1,40 @@
+{% extends 'base.html.twig' %}
+{% block title%} LA LISTES DES ETUDIANTS {% endblock %}
+
+{% block body %}
+<h1> LA LISTES DES ETUDIANTS </h1>
+ {% if students %}
+    <table id="students" class="table">
+      
+        <tr>
+          <th>ID</th>
+          <th>NAME</th>
+          <th>EMAIL</th>
+          <th>AGE</th>
+          <th>Classroom</th>
+          <th>ACTION</th>
+        </tr>
+      
+      
+        {% for student in students %}
+          <tr>
+            <td>{{ student.id }}</td>
+            <td>{{ student.name }}</td>
+            <td>{{ student.email }}</td>
+            <td>{{ student.age }}</td>
+            <td>{{ student.classroom}}</td>
+            <td>
+               <a href="{{ path('remove', {'id': student.id}) }}" class="btn btn-primary" 
+               onclick="return confirm('Êtes-vous sûr de supprimer cet student?')">remove</a>
+
+            <a href="{{ path('edit_student', {'id': student.id}) }}" class="btn btn-primary">update</a>
+
+            </td>
+          </tr>
+        {% endfor %}
+    </table>
+  {% else %}
+    <p>Aucun students</p>
+  {% endif %} 
+  <a href="{{ path('add') }}" class="btn btn-primary"> add author </a>
+{% endblock %}
