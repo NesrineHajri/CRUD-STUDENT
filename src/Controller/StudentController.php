@@ -1,21 +1,17 @@
 <?php
 
 namespace App\Controller;
-
+use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Student;
 use App\Form\StudentType;
-use App\Repository\ClassroomRepository;
+use App\Entity\Classroom;
 use App\Repository\StudentRepository;
+use Symfony\Component\HttpFoundation\Request;
+use App\Repository\ClassroomRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\BrowserKit\Request;
-use Symfony\Component\HttpFoundation\Request as HttpFoundationRequest;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-
-
-
-
 
 
 class StudentController extends AbstractController
@@ -37,8 +33,23 @@ class StudentController extends AbstractController
         ]);
     }
 
+    #[Route('/add1', name: 'add1')]
+    public function add1(ClassroomRepository $repo,ManagerRegistry $mr): Response
+    {
+        $c=$repo->find('1');
+        $s=new Student();
+        $s->setName('nesrine');
+        $s->setEmail('nesrine@gmail.com');
+        $s->setAge('24');
+        $s->setClassroom($c);
+        $em=$mr->getManager();
+        $em->persist($s);
+        $em->flush();
+        return $this->redirectToRoute('fetch');
+    }
+
     #[Route('/add', name: 'add')]
-    public function add(ManagerRegistry $mr,ClassroomRepository $repo,HttpFoundationRequest $req):Response
+    public function add(ManagerRegistry $mr,ClassroomRepository $repo,Request $req):Response
     {
         $s=new Student(); //instance
 
@@ -60,6 +71,21 @@ class StudentController extends AbstractController
             'f'=>$form->createView()
         ]);
 
+    }
+
+    #[Route('/remove1/{name}', name: 'remove1')]
+    public function remove1(ManagerRegistry $mr,StudentRepository $repo,$name): Response
+    {
+       $entite=$repo->findByNom($name);
+        //$entite=$repo->find($name);
+        if(!$entite)
+        {
+            throw $this->createNotFoundException('Aucune entité trouvée avec ce nom.');
+        }
+        $em=$mr->getManager();
+        $em->remove($entite);
+        $em->flush();
+        return $this->redirectToRoute('fetch');    
     }
 
     #[Route('/remove/{id}', name: 'remove')]
@@ -87,28 +113,109 @@ class StudentController extends AbstractController
 
 
     
-    #[Route('/student/edit/{id}', name: 'edit_student', methods: ['GET', 'POST'])]
-    public function edit(HttpFoundationRequest $request, StudentRepository $repo, ManagerRegistry $mr, int $id): Response
+    #[Route('/student/edit/{id}', name: 'edit_student')]
+    public function edit(StudentRepository $repo, ManagerRegistry $mr,Request $request, int $id): Response
     {
         $student = $repo->find($id);
-
-        if (!$student) {
-            return new Response('Student non trouvé');
-        }
-
-        $form = $this->createForm(StudentType::class, $student); // Création du formulaire et binding
+        $form = $this->createForm(StudentType::class, $student); 
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($form->isSubmitted())
+        {
             $em = $mr->getManager();
+            $em->persist($student);
             $em->flush();
 
-            return $this->redirectToRoute('student_list'); 
+            return $this->redirectToRoute('fetch'); 
         }
 
         return $this->render('student/editStudent.html.twig', [
             'f' => $form->createView(),
         ]);
     }
+
+    #[Route('/dql', name: 'dql')]
+    public function dqlStudent(EntityManagerInterface $em , Request $request , StudentRepository $repo):Response
+    {
+        $result=$repo->findAll();
+        $req=$em->createQuery("select s from App\Entity\Student s where s.name = :n ");
+        if($request->isMethod('post')){
+            $value=$request->get('test');
+            $req->setParameter('n' , $value);
+            $result=$req->getResult();
+        }
+        return $this->render('student/searchStudent.html.twig',[
+        'student' => $result]);
+    }
+
+    #[Route('/dql1', name: 'dql1')]
+    public function dqlStudent1(EntityManagerInterface $em , Request $request , StudentRepository $repo):Response
+        {
+            $result=$repo->findAll();
+            //$req=$em->createQuery("select s from App\Entity\Student s where s.name = :n ");
+            if($request->isMethod('post')){
+                $value=$request->get('test');
+                
+                $result=$repo->fetchStudentByName($value);
+                //dd($result);
+            }
+            return $this->render('student/searchStudent1.html.twig',[
+            'student' => $result]);
+        }
+    
+    #[Route('/dql2', name: 'dql2')]
+    public function dql2(EntityManagerInterface $em):Response
+        {
+            $req=$em->createQuery("select count(s) from App\Entity\Student s");//elle compte le nombre d'etudiants 
+            $result=$req->getResult();
+            dd($result);
+        }
+
+    #[Route('/dql3', name: 'dql3')]
+    public function dql3(EntityManagerInterface $em):Response
+        {
+            $req=$em->createQuery("select s.name from App\Entity\Student s Order By s.name DESC");//tri
+            $result=$req->getResult();
+            dd($result);
+        }
+    
+    #[Route('/dql4', name: 'dql4')]
+    public function dql4(EntityManagerInterface $em):Response
+        {
+            $req=$em->createQuery("select s.name from App\Entity\Student s where s.classroom !='null' ");
+            $result=$req->getResult();
+            dd($result);
+        }
+
+    #[Route('/dql5', name: 'dql5')]
+    public function dql5(EntityManagerInterface $em):Response
+        {
+            $req=$em->createQuery("select s.name t ,c.name from App\Entity\Student s join s.classroom c");
+            $result=$req->getResult();
+            dd($result);
+        }
+
+    #[Route('/dql6', name: 'dql6')]
+    public function dql6(EntityManagerInterface $em):Response
+        {
+            $req=$em->createQuery("select s.name t , c.name from App\Entity\Student s join s.classroom c where c.name='3a15'");
+            $result=$req->getResult();
+            dd($result);
+        }
+
+    #[Route('/QB', name: 'QB')]
+    public function QB(StudentRepository $repo):Response
+        {
+            $result=$repo->listQB();
+            dd($result);   
+        }
+
+    #[Route('/QB1', name: 'QB1')]
+    public function QB1(StudentRepository $repo):Response
+        {
+            $result=$repo->listQB1();
+            dd($result);   
+        }
+
 
 }
